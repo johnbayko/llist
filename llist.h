@@ -1,6 +1,6 @@
 /*
    llist.h - linked list library header - user version.
-  
+
    revision 1
    - I decided to add a revision number, so I know which version is the
    most recent (and hopefully, bug-free).
@@ -14,13 +14,15 @@
    - create_list() now returns the node.
    - replaced create_node() with node_alloc(), added create_node() macro
    for compatibility.
+
+   Gone into git now, revisions are in there.
  */
 
-#ifndef _LLIST
-#define _LLIST 1
+#ifndef _LLIST_H
+#define _LLIST_H
 
 /* include macros and typedefs for llist */
-#include <llistmacro.h>
+#include "llistmacro.h"
 
 /* function definitions */
 /*
@@ -40,7 +42,8 @@
 /* prototypes for llist.c functions */
 
 void *create_list(void *node);
-void *node_alloc(int size);
+void *init_node(void *node);
+void *node_alloc(size_t size);
 void *head_node(void *node);
 void *tail_node(void *node);
 void *insert_node(void *list, void *node);
@@ -56,6 +59,6 @@ void *append_list(void *list1, void *list2);
 
 /* prototypes for llscan.c functions */
 
-void *scan_list(void *list, int (*func)(void *) );
+void *scan_list(void *list, bool (*func)(void *) );
 
-#endif
+#endif // _LLIST_H

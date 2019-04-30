@@ -7,40 +7,42 @@
  * most recent (and hopefully, bug-free).
  */
 
-#include <stdlib.h>
+#include <stdbool.h>
 #include "_llist.h"    /* contains the real prototypes for llist.c */
 
-#define TRUE 1
-#define FALSE 0
-
-#ifndef NULL
-#define NULL 0
-#endif
-
 /*
- * Initializes a node to be a list (return value can be ignored)
+    Initializes a node to be a list (return value can be ignored)
+    No NULL check.
  */
-LIST_TYPE *create_list(node)
-LIST_TYPE *node;
+LIST_TYPE *create_list(LIST_TYPE * const node)
 {
     node->NEXT = node->PREV = node; /* link node to self */
-    node->HEAD = TRUE;
+    node->HEAD = true;
     return(node);
 }
 
 /*
- * Clear all node information so it's not mistaken for a llist
+    Initialize a node to be not in a list.
+    No NULL check.
  */
-LIST_TYPE *node_alloc(size)
-int size;
+LIST_TYPE *init_node(LIST_TYPE * const node)
 {
-LIST_TYPE *temp;
+    node->NEXT = node->PREV = NULL;
+    node->HEAD = false;
+    return(node);
+}
 
-    if( temp = (LIST_TYPE *)malloc((size_t)size) ) {
-        temp->NEXT = temp->PREV = NULL;
-        temp->HEAD = FALSE;
+/*
+    Allocate a node and clear all node information so it's not mistaken for a
+    llist.
+ */
+LIST_TYPE *node_alloc(const size_t size)
+{
+    LIST_TYPE * const node = malloc(size);
+    if (NULL != node) {
+        init_node(node);
     }
-    return(temp);
+    return node;
 }
 
 /*
@@ -50,51 +52,53 @@ LIST_TYPE *temp;
  * If HEAD is not set anywhere, head_node returns node.
  * If node is NULL, returns NULL.
  */
-LIST_TYPE *head_node(node)
-LIST_TYPE *node;
+LIST_TYPE *head_node(LIST_TYPE * const node)
 {
-LIST_TYPE *temp, *mark;
+    LIST_TYPE *temp, *mark;
 
-    if(node) {            /* node exists */
-        if(node->NEXT) {  /* node linked to a list */
-            mark = node->NEXT;
-            for(temp = node;
-                    (temp->HEAD == 0) && (temp != mark);
-                    temp = temp->PREV);
-                return(temp);
-        } else {
-            create_list(node);  /* node not in list, make one */
-            return(node);       /* it's now the head */
+    if (NULL == node) {
+        // Does not exist.
+        return (NULL);
+    }
+    if (NULL == node->NEXT) {
+        create_list(node);  /* node not in list, make one */
+        return (node);       /* it's now the head */
+    }
+    /* node is linked to a list */
+    /* scan_list() scans forward, this scans backwards on the theory that if
+       the code is interested in the head, the node it keeps track of is
+       probably pretty close, so it's faster that way. */
+    for (LIST_TYPE * scan = node;;scan = scan->PREV) {
+        if (scan->HEAD) {
+            return scan;
         }
-    } else
-        return((LIST_TYPE *)NULL);
+        if (node == scan->PREV) {
+            return node;
+        }
+    }
+    // Shouldn't get here.
+    return (node);
 }
 
 /* Find the tail of the list (prev of head_node() ) */
-LIST_TYPE *tail_node(node)
-LIST_TYPE *node;
+LIST_TYPE *tail_node(LIST_TYPE * const list)
 {
-    node = head_node(node);
-    if(node) {
-        return(node->PREV);
-    } else {
-        return((LIST_TYPE *)NULL);
+    LIST_TYPE * const node = head_node(list);
+    if (NULL == node) {
+        return NULL;
     }
+    return (node->PREV);
 }
 
 /*
  * Add a node to a list - return new node, reset HEAD if needed.
  */
-LIST_TYPE *insert_node(list,node)
-LIST_TYPE *list,
-          *node;
+LIST_TYPE *insert_node(LIST_TYPE * const list, LIST_TYPE * const node)
 {
-LIST_TYPE *temp;
-
-    temp = _insert_node(list,node);
-    if(temp->NEXT->HEAD) {
-        temp->NEXT->HEAD = FALSE;
-        temp->HEAD = TRUE;
+    LIST_TYPE * const temp = _insert_node(list,node);
+    if (temp->NEXT->HEAD) {
+        temp->NEXT->HEAD = false;
+        temp->HEAD = true;
     }
     return(temp);
 }
@@ -102,25 +106,23 @@ LIST_TYPE *temp;
 /*
  * Insert a node within a list without checking HEAD.
  */
-LIST_TYPE *_insert_node(list,node)
-LIST_TYPE *list,
-          *node;
+LIST_TYPE *_insert_node(LIST_TYPE * const list, LIST_TYPE * const node)
 {
-    if(list == NULL) {    /* create list from node if no list */
-        list = create_list(node);
-    } else {
-        if( (list->NEXT == NULL) || (list->PREV == NULL) ) {
-            /* not a list - initialise it */
-            /* if caused by program error, may drop nodes */
-            create_list(list);
-        }
-        node->HEAD = FALSE;
-        node->NEXT = list;
-        node->PREV = list->PREV;
-        list->PREV->NEXT = node;
-        list->PREV = node;
+    if (NULL == list) {
+        /* no list, create list from node */
+        return create_list(node);
     }
-    return(node);        /* new head of list */
+    if ( (NULL == list->NEXT) || (NULL == list->PREV) ) {
+        /* not a list - initialise it */
+        /* if caused by program error, may drop nodes */
+        create_list(list);
+    }
+    node->HEAD = false;
+    node->NEXT = list;
+    node->PREV = list->PREV;
+    list->PREV->NEXT = node;
+    list->PREV = node;
+    return (node);        /* new head of list */
 }
 
 /*
@@ -128,19 +130,10 @@ LIST_TYPE *list,
    list head), or node if list is NULL. In other words, you can use
    "list = append_node(list, node)" any time.
  */
-LIST_TYPE *append_node(list,node)
-LIST_TYPE *list,
-          *node;
+LIST_TYPE *append_node(LIST_TYPE * const list, LIST_TYPE * const node)
 {
-LIST_TYPE *retnode;
-
-    if(list) {
-        retnode = list;
-    } else {
-        retnode = node;
-    }
     _insert_node(head_node(list), node);
-    return(retnode);
+    return (NULL != list) ? list : node;
 }
 
 /*
@@ -151,65 +144,46 @@ LIST_TYPE *retnode;
        while(list) { node=del_node(list); free(node); }
    to free a list.
  */
-LIST_TYPE *del_node(node)
-LIST_TYPE *node;
+LIST_TYPE *del_node(LIST_TYPE * const node)
 {
-    if(node) {
-        if( (node->NEXT == NULL) || (node->PREV == NULL) ) {
-            /* not a valid list node, can't unlink */
-            return(NULL);
-        }
-        if(node->NEXT == node) { /* only one node */
-            node->HEAD = FALSE;  /* not in list anymore */
-            return(NULL);
-        } else {
-            node->NEXT->PREV = node->PREV;
-            node->PREV->NEXT = node->NEXT;
-            
-            if(node->HEAD) {  /* if removing head node */
-                node->HEAD = FALSE; /* set new head */
-                node->NEXT->HEAD = TRUE;
-            }
-            return(node->NEXT);
-        }
-    } else
-        return((LIST_TYPE *)NULL);
+    if (NULL == node) {
+        return(NULL);
+    }
+    if ( (NULL == node->NEXT) || (NULL == node->PREV) ) {
+        /* not a valid list node, can't unlink */
+        return(NULL);
+    }
+    if (node->NEXT == node) {
+        /* only one node */
+        init_node(node);  /* not in list anymore */
+        return(NULL);
+    }
+    node->NEXT->PREV = node->PREV;
+    node->PREV->NEXT = node->NEXT;
+
+    LIST_TYPE * const remaining_list = node->NEXT;
+    if (node->HEAD) {
+        /* removing head node, set new head */
+        remaining_list->HEAD = true;
+    }
+    init_node(node);  /* not in list anymore */
+    return remaining_list;
 }
 
 /*
    Remove and free a node from a list and return the following node
    (or NULL if last node).
    You can use:
-       while(list) free_node(list);
+       while(list) list = free_node(list);
    to free a simple list.
  */
-LIST_TYPE *free_node(node)
-LIST_TYPE *node;
+LIST_TYPE *free_node(LIST_TYPE * const node)
 {
-LIST_TYPE *temp;
-
-    if(node) {
-        if( (node->NEXT == NULL) || (node->PREV == NULL) ) {
-            /* not a valid list node, can't unlink so just free it */
-            free(node);
-            return(NULL);
-        }
-        if(node->NEXT == node) { /* only one node */
-            free(node);
-            return(NULL);
-        } else {
-            node->NEXT->PREV = node->PREV;
-            node->PREV->NEXT = node->NEXT;
-            temp = node->NEXT;   /* save node to return */
-            
-            if(node->HEAD) {    /* if removing head node */
-                node->HEAD = FALSE; /* set new head */
-                temp->HEAD = TRUE;
-            }
-            free(node);
-            return(temp);
-        }
-    } else
-        return((LIST_TYPE *)NULL);
+    if (NULL == node) {
+        return (NULL);
+    }
+    LIST_TYPE * remaining_list = del_node(node);
+    free(node);
+    return remaining_list;
 }
 

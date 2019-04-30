@@ -7,32 +7,30 @@
  * most recent (and hopefully, bug-free).
  */
 
+#include <stdbool.h>
 #include "_llist.h"
-
-#define TRUE 1
-#define FALSE 0
-#define NULL 0
 
 /*
    Apply a function to each node of a list, until the function
-   returns TRUE or the end of the list is reached.
+   returns true or the end of the list is reached.
    scan_list() returns node that was true, or NULL
    if the scan reached the end first.
 */
-LIST_TYPE *scan_list(list, func)
-LIST_TYPE *list;
-int       (*func)(LIST_TYPE *);
-{
-LIST_TYPE *listscan;
-
-    if(list) {
-        listscan = list;
-        do {
-            if( (*func)(listscan) ) {
-                return(listscan);
-            }
-            listscan = listscan->NEXT;
-        } while(listscan->HEAD == FALSE);
+LIST_TYPE *scan_list(
+    LIST_TYPE * const list,
+    bool (*func)(LIST_TYPE *)
+) {
+    if (NULL == list) {
+        return NULL;
     }
-    return( (LIST_TYPE *)NULL );
+    for (LIST_TYPE * listscan = list;;listscan = listscan->NEXT) {
+        if ( (*func)(listscan) ) {
+            return (listscan);
+        }
+        if (list == listscan->NEXT) {
+            return NULL;
+        }
+    }
+    // shouldn't get here
+    return NULL;
 }

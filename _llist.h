@@ -4,10 +4,11 @@
  * See llist.h for revision history.
  */
 
-#ifndef _LLIST
-#define _LLIST 1
+#ifndef _LLIST_H
+#define _LLIST_H
 
 /* include macros and typedefs for llist */
+#include <stdlib.h>
 #include "llistmacro.h"
 
 /* function definitions */
@@ -28,7 +29,8 @@
 /* prototypes for llist.c functions */
 
 LIST_TYPE *create_list(LIST_TYPE *node);
-LIST_TYPE *node_alloc(int size);
+LIST_TYPE *init_node(LIST_TYPE *node);
+LIST_TYPE *node_alloc(size_t size);
 LIST_TYPE *head_node(LIST_TYPE *node);
 LIST_TYPE *tail_node(LIST_TYPE *node);
 LIST_TYPE *insert_node(LIST_TYPE *list, LIST_TYPE *node);
@@ -44,6 +46,6 @@ LIST_TYPE *append_list(LIST_TYPE *list1, LIST_TYPE *list2);
 
 /* prototypes for llscan.c functions */
 
-LIST_TYPE *scan_list(LIST_TYPE *list, int (*func)(LIST_TYPE *) );
+LIST_TYPE *scan_list(LIST_TYPE *list, bool (*func)(LIST_TYPE *) );
 
-#endif
+#endif  // _LLIST_H
