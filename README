@@ -1,0 +1,131 @@
+Linked List library in C.
+
+I think pretty much everyone who learns C writes a linked list library at some point. This is mine.
+
+I wrote it back on an 8-bit TRS-80 Color Computer 3 under OS-9 6809. If you look back at the first version, you'll notice K&R declarations. Also OS-9 C had no make command. I used it in things like a fun Markov chain text mixer, and a Prolog interpreter.
+
+Everyone has their preferences, but I like this one for a few reasons:
+
+1. There are no memory allocations for any of the functions other than node creation. This means functions will always succeed (given valid inputs).
+
+2. There are no separate "list" and "node" pointers, a pointer to any node is also a pointer to the node's list, although a pointer to the head node is usually faster.
+
+Main limits are:
+
+1. A node can only be a member of a single list at a time.
+
+2. You can't use NEXT, PREV, or HEAD as names in a node struct.
+
+----
+LIST_HEAD
+----
+A struct becomes a node by adding a member of the struct type named LIST_HEAD as the first field:
+
+    struct weather {
+        struct weather LIST_HEAD;
+        int station_no;
+        time_t measure_time;
+        ...
+    };
+
+----
+void *node_alloc(size_t size);
+void *init_node(void *node);
+----
+You can allocate it with node_alloc(size_t), which initialises all list pointers, but leaves all user fields unchanged, or do it yourself with calloc() or malloc() followed by node_init() (and whatever other initialisation you need):
+
+    struct weather * weather_item = node_alloc(sizeof(struct weather));
+    weather_item->station_no = -1;  // Indicates no valid data.
+
+    struct weather * weather_item = malloc(sizeof(struct weather));
+    node_init(weather_item);
+    weather_item->station_no = -1;  // Indicates no valid data.
+
+----
+void *create_list(void *node);
+----
+It becomes a list with create_list(), or by adding to a NULL list. Which sounds confusing, but isn't:
+
+    struct weather * weather_list = NULL;
+
+    for (;;) {
+        struct weather * weather_item = get_weather();
+        if (-1 == weather_item->station_no) {
+            free(weather_item);
+            break;
+        }
+        // First time weather_list is NULL, and that's okay.
+        weather_list = append_node(weather_list, weather_item);
+    }
+
+----
+void *insert_node(void *list, void *node);
+void *add_node(void *list, void *node);
+void *append_node(void *list, void *node);
+----
+insert_node() inserts a node into a list at the node pointed to by the list argument, the existing node follows the new node, the newly added node is returned.
+
+add_node() adds to the head of the list and returns the newly added node (new list head).
+
+append_node() appends to the end, and returns the original list node (or new node if list was NULL).
+
+----
+void *del_node(void *node);
+void *free_node(void *node);
+----
+del_node() unlinks the node from the list and returns the node after, or NULL if the list is empty.
+
+free_node() is identical to del_node() except if frees the node after unlinking it. You don't want to use this if the node has pointers to other structs that need to be freed, but otherwise a list can be freed this way:
+
+    while (NULL != list) {
+       list = free_node(list);
+    }
+
+----
+void *head_node(void *node);
+void *tail_node(void *node);
+----
+head_node() and tail_node() return the first (head) and last (tail) nodes of the list, respectively.
+
+You might not expect these to ever modify the nodes passed to them, but if the node is not in a list, create_list() is called to turn it into one.
+
+----
+bool is_head(void *node);
+bool is_tail(void *node);
+----
+The lists loop around, so tail_node(list)->NEXT == head_node(list). is_head() and is_tail() indicate if a node is the first or last node in a list respectively.
+
+----
+void *next_node(void *node);
+void *isnext_node(void *node);
+void *prev_node(void *node);
+void *isprev_node(void *node);
+----
+The list can be navigated by following node->NEXT and node->PREV pointers, but next_node() and prev_node() macros do that and include a NULL check, so that next_node(NULL) returns NULL rather than a segmentation fault (if you're passing a pointer that you expect isn't NULL, you'll hit that problem later in your code anyway so it doesn't buy you too much).
+
+isnext_node() and isprev_node() do the same, except return NULL for the head or tail nodes of the list. It's usually better to just check for is_head() or is_tail() first instead.
+
+----
+void *scan_list(void *list, bool (*func)(void *) );
+----
+Some list libraries support iterators, or have a "foreach" type of construct, but this one doesn't. It does have scan_list(), which will apply a function to all nodes starting from the head. If the function returns true, that node is returned. If it returns false for all nodes in the list, it returns NULL.
+
+If you think the function should take an added data field (e.g. a node to be compared to), you're probably right, but I never needed it so didn't add it.
+
+----
+void *insert_list(void *list1, void *list2);
+void *append_list(void *list1, void *list2);
+----
+You can also insert and append one list into another. The head of list1 becomes the head of the new list, except the single case where list2 is inserted into list1 at its head - that is, list2 replaces the head of list1, and list1 starts after the tail of list2.
+
+add_list() is missing, I never needed that.
+
+There is a Makefile for MacOS. In additional to the individual file targets, it has these targets:
+
+lib: Makes libllist.so
+
+test: Makes a static libllist.a and a file called ltest (from ltest.c), and runs it. It's an interactive tool that tests some of the library functions.
+
+clean: Remove anything that might have been built.
+
+There's no install: or all: targets. Might be useful to include the static llist library in the lib: targets, since it's absolutely tiny at only about 4K so you save almost nothing by making it a dynamic library.

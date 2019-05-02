@@ -60,7 +60,7 @@ LIST_TYPE *head_node(LIST_TYPE * const node)
         // Does not exist.
         return (NULL);
     }
-    if (NULL == node->NEXT) {
+    if ( (NULL == node->NEXT) || (NULL == node->PREV)) {
         create_list(node);  /* node not in list, make one */
         return (node);       /* it's now the head */
     }

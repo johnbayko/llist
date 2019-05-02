@@ -25,19 +25,6 @@
 #include "llistmacro.h"
 
 /* function definitions */
-/*
- * create_list();    returns nothing
- *
- * LIST_TYPE *insert_node(),
- *           *_insert_node(),
- *           *create_node(),
- *           *del_node(),
- *           *free_node(),
- *           *head_node(),
- *           *insert_list(),
- *           *append_list(),
- *           *scanlist();
- */
 
 /* prototypes for llist.c functions */
 
