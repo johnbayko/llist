@@ -24,7 +24,7 @@ typedef struct LIST_TYPE {
 #define next_node(node)   (node ? node->NEXT : NULL)
 
   /* isprev_node() gives NULL if head of list */
-#define isprev_node(node) ((node && node->HEAD) ? false : node->PREV)
+#define isprev_node(node) ((node && node->HEAD) ? NULL : node->PREV)
 #define prev_node(node)   (node ? node->PREV : NULL)
 
 #define is_head(node)     ((NULL != node) ? node->HEAD : false)

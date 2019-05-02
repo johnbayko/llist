@@ -30,3 +30,6 @@ test: ltest
 clean:
 	rm -f ${TARGETS}
 
+.PHONY: push
+push:
+	git push -u origin master
