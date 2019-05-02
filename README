@@ -24,6 +24,16 @@ Main limits are:
 2. You can't use NEXT, PREV, or HEAD as names in a node struct.
 
 ----
+llist.h
+----
+Header file "llist.h" must be included. That includes function declarations as
+well as macros for the list structure and some additional functions.
+
+Programs should be linked with "-lllist" for either shared libllist.so or
+static libllist.a libraries. See the Makefile "test" target and description
+below.
+
+----
 LIST_HEAD
 ----
 A struct becomes a node by adding a member of the struct type named LIST_HEAD
@@ -82,8 +92,8 @@ returned.
 add_node() adds to the head of the list and returns the newly added node (new
 list head).
 
-append_node() appends to the end, and returns the original list node (or new
-node if list was NULL).
+append_node() appends to the end, and returns the original list node (normally
+list head) or new node if list was NULL.
 
 ----
 void *del_node(void *node);
@@ -140,7 +150,8 @@ void *scan_list(void *list, bool (*func)(void *) );
 Some list libraries support iterators, or have a "foreach" type of construct,
 but this one doesn't. It does have scan_list(), which will apply a function to
 all nodes starting from the head. If the function returns true, that node is
-returned. If it returns false for all nodes in the list, it returns NULL.
+returned. If the test function returns false for all nodes in the list,
+scan_list() returns NULL.
 
 If you think the function should take an added data field (e.g. a node to be
 compared to), you're probably right, but I never needed it so didn't add it.
@@ -156,6 +167,9 @@ after the tail of list2.
 
 add_list() is missing, I never needed that.
 
+----
+Makefile
+----
 There is a Makefile for MacOS. In additional to the individual file targets, it
 has these targets:
 
